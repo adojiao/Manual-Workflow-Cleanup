@@ -1,84 +1,39 @@
-# .github/workflows/clean-all-repos.yml
-name: Clean All Repositories Workflows
+# .github/workflows/auto-cleanup.yml
+name: Auto Cleanup Workflow Runs
 on:
+  # 每周一凌晨3点自动运行
+  schedule:
+    - cron: '0 3 * * 1'
+  # 允许手动触发
   workflow_dispatch:
     inputs:
-      keep_minimum:
-        description: '每个工作流保留的记录数'
+      keep_count:
+        description: '保留数量'
         required: false
         default: '30'
 
 permissions:
   actions: write
-  contents: read
 
 jobs:
-  get-repositories:
-    runs-on: ubuntu-latest
-    outputs:
-      repo_list: ${{ steps.get-repos.outputs.repo_list }}
-    steps:
-      - name: Get all repositories
-        id: get-repos
-        uses: actions/github-script@v7
-        with:
-          script: |
-            try {
-              // 获取用户的所有仓库
-              const { data: userRepos } = await github.rest.repos.listForAuthenticatedUser({
-                per_page: 100,
-                type: 'all'
-              });
-              
-              const repoList = userRepos.map(repo => repo.full_name);
-              console.log(`找到 ${repoList.length} 个个人仓库`);
-              
-              // 尝试获取组织仓库（可选）
-              try {
-                const { data: orgs } = await github.rest.orgs.listForAuthenticatedUser();
-                for (const org of orgs.slice(0, 3)) { // 限制前3个组织，避免超时
-                  const { data: orgRepos } = await github.rest.repos.listForOrg({
-                    org: org.login,
-                    per_page: 50,
-                    type: 'all'
-                  });
-                  orgRepos.forEach(repo => repoList.push(repo.full_name));
-                  console.log(`从组织 ${org.login} 添加 ${orgRepos.length} 个仓库`);
-                }
-              } catch (orgError) {
-                console.log('获取组织仓库失败:', orgError.message);
-              }
-              
-              core.setOutput('repo_list', JSON.stringify([...new Set(repoList)]));
-            } catch (error) {
-              console.error('获取仓库失败:', error);
-              // 返回一个默认的仓库列表
-              core.setOutput('repo_list', JSON.stringify(['${{ github.repository }}']));
-            }
-
   cleanup:
     runs-on: ubuntu-latest
-    needs: get-repositories
-    strategy:
-      matrix:
-        repo: ${{ fromJSON(needs.get-repositories.outputs.repo_list) }}
-      max-parallel: 2  # 降低并行度，避免API限制
     steps:
-      - name: Clean ${{ matrix.repo }}
+      - name: Clean all repositories
         uses: Mattraks/delete-workflow-runs@v2
         with:
           token: ${{ secrets.OTHER_REPO_TOKEN }}
-          repository: ${{ matrix.repo }}
-          keep_minimum_runs: ${{ github.event.inputs.keep_minimum }}
-          # 只删除已完成的记录（通过结论模式）
-          delete_run_by_conclusion_pattern: 'success,failure,cancelled,skipped'
-        continue-on-error: true
-
-      - name: Log status
+          repository: '*'  # 所有仓库
+          keep_minimum_runs: ${{ inputs.keep_count || 30 }}
+          delete_run_by_conclusion_pattern: 'success,failure'
+      
+      - name: Send notification
         if: always()
         run: |
-          if [ "${{ job.status }}" = "success" ]; then
-            echo "✅ 成功清理仓库: ${{ matrix.repo }}"
-          else
-            echo "⚠️  清理仓库失败或跳过: ${{ matrix.repo }}"
-          fi
+          echo "### 🧹 工作流记录清理完成" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **触发方式**: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **保留数量**: ${{ inputs.keep_count || 30 }} 条/工作流" >> $GITHUB_STEP_SUMMARY
+          echo "- **执行时间**: $(date)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "所有仓库的工作流记录已清理完成。" >> $GITHUB_STEP_SUMMARY
