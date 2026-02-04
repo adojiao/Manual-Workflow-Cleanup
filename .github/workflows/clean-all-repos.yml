@@ -10,7 +10,7 @@ on:
       keep_minimum:
         description: '每个工作流保留的记录数'
         required: false
-        default: '30'
+        default: '5'
 
 permissions:
   actions: write
