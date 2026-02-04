@@ -1,0 +1,24 @@
+# .github/workflows/cleanup-basic.yml
+name: Basic Cleanup All Repositories
+on:
+  workflow_dispatch:
+    inputs:
+      keep_minimum:
+        description: '每个工作流保留的记录数'
+        required: false
+        default: '30'
+
+permissions:
+  actions: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clean my repositories
+        uses: Mattraks/delete-workflow-runs@v2
+        with:
+          token: ${{ secrets.OTHER_REPO_TOKEN }}
+          repository: my-username/*  # 使用通配符清理所有仓库
+          keep_minimum_runs: ${{ github.event.inputs.keep_minimum }}
+          delete_only: 'completed'
