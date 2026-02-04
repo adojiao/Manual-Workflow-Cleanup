@@ -1,0 +1,54 @@
+name: Manual Workflow Cleanup
+on:
+  workflow_dispatch:
+    inputs:
+      days_old:
+        description: '删除多少天前的记录'
+        required: false
+        default: '30'
+        type: number
+        
+      workflow_name:
+        description: '工作流名称（多个用逗号分隔）'
+        required: false
+        default: ''
+        type: string
+        
+      keep_minimum:
+        description: '最少保留记录数'
+        required: false
+        default: '20'
+        type: number
+        
+      delete_type:
+        description: '删除类型'
+        required: false
+        default: 'completed'
+        type: choice
+        options:
+          - completed
+          - all
+
+permissions:
+  actions: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Display selected parameters
+        run: |
+          echo "将要删除的参数配置："
+          echo "天数: ${{ github.event.inputs.days_old }}"
+          echo "工作流: ${{ github.event.inputs.workflow_name || '所有工作流' }}"
+          echo "最少保留: ${{ github.event.inputs.keep_minimum }}"
+          echo "删除类型: ${{ github.event.inputs.delete_type }}"
+      
+      - name: Delete workflow runs
+        uses: actions/delete-workflow-runs@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          workflow_run_days_old: ${{ github.event.inputs.days_old }}
+          workflow_name: ${{ github.event.inputs.workflow_name }}
+          keep_minimum_runs: ${{ github.event.inputs.keep_minimum }}
+          delete_only: ${{ github.event.inputs.delete_type }}
