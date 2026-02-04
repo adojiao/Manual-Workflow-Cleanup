@@ -1,6 +1,10 @@
 # .github/workflows/cleanup-simple.yml
 name: Simple Cleanup All Repos
 on:
+  # 每月1号凌晨2点自动执行
+  schedule:
+    - cron: '0 2 1 * *'
+  # 允许手动触发
   workflow_dispatch:
     inputs:
       keep_minimum:
