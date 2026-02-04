@@ -19,18 +19,10 @@ on:
         required: false
         default: '20'
         type: number
-        
-      delete_type:
-        description: '删除类型'
-        required: false
-        default: 'completed'
-        type: choice
-        options:
-          - completed
-          - all
 
 permissions:
   actions: write
+  contents: read
 
 jobs:
   cleanup:
@@ -42,13 +34,16 @@ jobs:
           echo "天数: ${{ github.event.inputs.days_old }}"
           echo "工作流: ${{ github.event.inputs.workflow_name || '所有工作流' }}"
           echo "最少保留: ${{ github.event.inputs.keep_minimum }}"
-          echo "删除类型: ${{ github.event.inputs.delete_type }}"
       
+      # 使用推荐的第三方 Action
       - name: Delete workflow runs
-        uses: actions/delete-workflow-runs@v2
+        uses: Mattraks/delete-workflow-runs@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          workflow_run_days_old: ${{ github.event.inputs.days_old }}
+          repository: ${{ github.repository }}
+          # 删除超过 N 天的记录
+          retain_days: ${{ github.event.inputs.days_old }}
+          # 或保留最近 N 条记录（二选一）
+          # keep_minimum_runs: ${{ github.event.inputs.keep_minimum }}
+          # 指定工作流（可选）
           workflow_name: ${{ github.event.inputs.workflow_name }}
-          keep_minimum_runs: ${{ github.event.inputs.keep_minimum }}
-          delete_only: ${{ github.event.inputs.delete_type }}
