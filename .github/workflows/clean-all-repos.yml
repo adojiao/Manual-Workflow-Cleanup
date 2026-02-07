@@ -3,7 +3,7 @@ name: Simple Cleanup All Repos
 on:
   # 每月1号凌晨2点自动执行
   schedule:
-    - cron: '0 2 1 * *'
+    - cron: '0 2 * * *'
   # 允许手动触发
   workflow_dispatch:
     inputs:
