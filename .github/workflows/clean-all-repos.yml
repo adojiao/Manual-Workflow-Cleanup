@@ -1,9 +1,9 @@
 # .github/workflows/cleanup-simple.yml
 name: 自动清理工作流
 on:
-  # 每月1号凌晨2点自动执行
+  # 凌晨2点自动执行
   schedule:
-    - cron: '0 2 * * *'
+    - cron: '0 2 * * 0'
   # 允许手动触发
   workflow_dispatch:
     inputs:
