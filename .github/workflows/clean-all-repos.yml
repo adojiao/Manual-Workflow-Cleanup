@@ -21,7 +21,7 @@ jobs:
     steps:
       - name: Clean repositories one by one
         env:
-          KEEP_MINIMUM: ${{ github.event.inputs.keep_minimum }}
+          KEEP_MINIMUM: ${{ github.event.inputs.keep_minimum || '5' }}
         run: |
           # 安装必要的工具
           sudo apt-get update
